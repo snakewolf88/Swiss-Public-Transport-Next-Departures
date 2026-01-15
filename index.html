@@ -1,297 +1,156 @@
- <!DOCTYPE html>
-
+<!DOCTYPE html>
 <html lang="en">
-
 <head>
-
     <meta charset="UTF-8">
-
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
     <title>Tramli - Unified Clean</title>
-
     <style>
-
         body { background: #0b0b0b; color: #ffaa00; font-family: 'Courier New', monospace; padding: 20px; display: flex; justify-content: center; }
-
         .app-container { width: 100%; max-width: 500px; }
-
-        
-
         .search-box { display: flex; gap: 8px; margin-bottom: 15px; }
-
         input { flex-grow: 1; padding: 12px; background: #1a1a1a; border: 1px solid #333; color: #fff; border-radius: 4px; font-family: inherit; outline: none; }
-
         button { padding: 10px 20px; background: #ffaa00; border: none; font-weight: bold; cursor: pointer; border-radius: 4px; }
-
-
         .unified-board { border-radius: 8px; background: #000; border: 1px solid #222; overflow: hidden; }
-
-
         .row { display: flex; padding: 12px 15px; border-bottom: 1px solid #111; align-items: center; }
-
-        
-
         .line-identity { display: flex; align-items: center; margin-right: 15px; width: 95px; flex-shrink: 0; }
-
-
         .line-box { 
-
             display: flex; align-items: center; justify-content: center;
-
             min-width: 55px; height: 30px; 
-
             font-weight: bold; border-radius: 3px; font-size: 0.9em;
-
         }
-
-        
-
         .v-icon { width: 22px; height: 22px; margin-right: 10px; flex-shrink: 0; }
-
         .v-icon svg { width: 100%; height: 100%; display: block; }
-
-        
-
         .dest { flex-grow: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 1.05em; color: #eee; }
-
-
         .time { width: 55px; text-align: right; font-weight: bold; font-size: 1.1em; }
-
         .hurry { color: #ff4444; animation: blink 1.5s infinite; }
-
-        
-
         .footer { text-align: center; color: #444; font-size: 0.7em; margin-top: 20px; text-transform: uppercase; }
-
-
         @keyframes blink { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
-
         .no-data { padding: 30px; text-align: center; color: #444; }
-
     </style>
-
 </head>
-
 <body>
 
-
 <div class="app-container">
-
     <div class="search-box">
-
         <input type="text" id="addressInput" placeholder="Address..." value="Zürich HB">
-
         <button onclick="searchAddress()">GO</button>
-
     </div>
-
     <div id="resultsContainer" class="unified-board"></div>
-
     <div class="footer" id="lastUpdated">Last Update: --:--</div>
-
 </div>
 
-
 <script>
-
     const ICONS = {
-
-        TRAM: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 384 512"><path fill="currentColor" d="M0 8C0-5.3 10.7-16 24-16l336 0c13.3 0 24 10.7 24 24l0 32c0 13.3-10.7 24-24 24s-24-10.7-24-24l0-8-120 0 0 64 40 0c53 0 96 43 96 96l0 160c0 31.2-14.9 59-38 76.5l64.3 76c8.6 10.1 7.3 25.3-2.8 33.8s-25.3 7.3-33.8-2.8l-74.6-88.1c-3.6 .4-7.3 .6-11.1 .6l-128 0c-3.8 0-7.5-.2-11.1-.6L42.3 535.5c-8.6 10.1-23.7 11.4-33.8 2.8s-11.4-23.7-2.8-33.8l64.3-76C46.9 411 32 383.2 32 352l0-160c0-53 43-96 96-96l40 0 0-64-120 0 0 8c0 13.3-10.7 24-24 24S0 53.3 0 40L0 8zM128 160c-17.7 0-32 14.3-32 32l0 32c0 17.7 14.3 32 32 32l128 0c17.7 0 32-14.3 32-32l0-32c0-17.7-14.3-32-32-32l-128 0zm32 192a32 32 0 1 0 -64 0 32 32 0 1 0 64 0zm96 32a32 32 0 1 0 0-64 32 32 0 1 0 0 64z"/></svg>`,
-
-        BUS: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><path fill="currentColor" d="M96 0C43 0 0 43 0 96L0 384c0 29.8 20.4 54.9 48 62l0 34c0 17.7 14.3 32 32 32l16 0c17.7 0 32-14.3 32-32l0-32 192 0 0 32c0 17.7 14.3 32 32 32l16 0c17.7 0 32-14.3 32-32l0-34c27.6-7.1 48-32.2 48-62l0-288c0-53-43-96-96-96L96 0zM64 176c0-17.7 14.3-32 32-32l104 0 0 112-104 0c-17.7 0-32-14.3-32-32l0-48zm184 80l0-112 104 0c17.7 0 32 14.3 32 32l0 48c0 17.7-14.3 32-32 32l-104 0zM96 320a32 32 0 1 1 0 64 32 32 0 1 1 0-64zm256 0a32 32 0 1 1 0 64 32 32 0 1 1 0-64zM152 72c0-13.3 10.7-24 24-24l96 0c13.3 0 24 10.7 24 24s-10.7 24-24 24l-96 0c-13.3 0-24-10.7-24-24z"/></svg>`,
-
-        TRAIN: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 384 512"><path fill="currentColor" d="M0 96C0 43 43 0 96 0L288 0c53 0 96 43 96 96l0 256c0 40.1-24.6 74.5-59.5 88.8l53.9 63.7c8.6 10.1 7.3 25.3-2.8 33.8s-25.3 7.3-33.8-2.8l-74-87.5-151.3 0-74 87.5c-8.6 10.1-23.7 11.4-33.8 2.8s-11.4-23.7-2.8-33.8l53.9-63.7C24.6 426.5 0 392.1 0 352L0 96zm64 32l0 96c0 17.7 14.3 32 32 32l72 0 0-160-72 0c-17.7 0-32 14.3-32 32zM216 256l72 0c17.7 0 32-14.3 32-32l0-96c0-17.7-14.3-32-32-32l-72 0 0 160zM96 384a32 32 0 1 0 0-64 32 32 0 1 0 0 64zm224-32a32 32 0 1 0 -64 0 32 32 0 1 0 64 0z"/></svg>`
-
+        TRAM: `<svg viewBox="0 0 384 512"><path fill="currentColor" d="M0 8C0-5.3 10.7-16 24-16l336 0c13.3 0 24 10.7 24 24l0 32c0 13.3-10.7 24-24 24s-24-10.7-24-24l0-8-120 0 0 64 40 0c53 0 96 43 96 96l0 160c0 31.2-14.9 59-38 76.5l64.3 76c8.6 10.1 7.3 25.3-2.8 33.8s-25.3 7.3-33.8-2.8l-74.6-88.1c-3.6 .4-7.3 .6-11.1 .6l-128 0c-3.8 0-7.5-.2-11.1-.6L42.3 535.5c-8.6 10.1-23.7 11.4-33.8 2.8s-11.4-23.7-2.8-33.8l64.3-76C46.9 411 32 383.2 32 352l0-160c0-53 43-96 96-96l40 0 0-64-120 0 0 8c0 13.3-10.7 24-24 24S0 53.3 0 40L0 8zM128 160c-17.7 0-32 14.3-32 32l0 32c0 17.7 14.3 32 32 32l128 0c17.7 0 32-14.3 32-32l0-32c0-17.7-14.3-32-32-32l-128 0zm32 192a32 32 0 1 0 -64 0 32 32 0 1 0 64 0zm96 32a32 32 0 1 0 0-64 32 32 0 1 0 0 64z"/></svg>`,
+        BUS: `<svg viewBox="0 0 448 512"><path fill="currentColor" d="M96 0C43 0 0 43 0 96L0 384c0 29.8 20.4 54.9 48 62l0 34c0 17.7 14.3 32 32 32l16 0c17.7 0 32-14.3 32-32l0-32 192 0 0 32c0 17.7 14.3 32 32 32l16 0c17.7 0 32-14.3 32-32l0-34c27.6-7.1 48-32.2 48-62l0-288c0-53-43-96-96-96L96 0zM64 176c0-17.7 14.3-32 32-32l104 0 0 112-104 0c-17.7 0-32-14.3-32-32l0-48zm184 80l0-112 104 0c17.7 0 32 14.3 32 32l0 48c0 17.7-14.3 32-32 32l-104 0zM96 320a32 32 0 1 1 0 64 32 32 0 1 1 0-64zm256 0a32 32 0 1 1 0 64 32 32 0 1 1 0-64zM152 72c0-13.3 10.7-24 24-24l96 0c13.3 0 24 10.7 24 24s-10.7 24-24 24l-96 0c-13.3 0-24-10.7-24-24z"/></svg>`,
+        TRAIN: `<svg viewBox="0 0 384 512"><path fill="currentColor" d="M0 96C0 43 43 0 96 0L288 0c53 0 96 43 96 96l0 256c0 40.1-24.6 74.5-59.5 88.8l53.9 63.7c8.6 10.1 7.3 25.3-2.8 33.8s-25.3 7.3-33.8-2.8l-74-87.5-151.3 0-74 87.5c-8.6 10.1-23.7 11.4-33.8 2.8s-11.4-23.7-2.8-33.8l53.9-63.7C24.6 426.5 0 392.1 0 352L0 96zm64 32l0 96c0 17.7 14.3 32 32 32l72 0 0-160-72 0c-17.7 0-32 14.3-32 32zM216 256l72 0c17.7 0 32-14.3 32-32l0-96c0-17.7-14.3-32-32-32l-72 0 0 160zM96 384a32 32 0 1 0 0-64 32 32 0 1 0 0 64zm224-32a32 32 0 1 0 -64 0 32 32 0 1 0 64 0z"/></svg>`
     };
-
 
     const lineColors = {
-
         "2": "#ed1c24", "3": "#00ac4f", "4": "#49479d", "5": "#956438", 
-
         "6": "#d99f4f", "7": "#231f20", "8": "#a6ce39", "9": "#49479d", 
-
         "10": "#ee3897", "11": "#00ac4f", "12": "#7ad0e2", "13": "#ffd503", 
-
         "14": "#00aeef", "15": "#ed1c24", "17": "#9e1762",
-
         "TRAIN": "#EB0000", "POSTAUTO": "#FFCC00", "BUS_DEFAULT": "#0070B4"
-
     };
 
-
-    function getTransportData(category, number) {
-
+    function getTransportData(dep) {
         let icon = ICONS.BUS;
-
         let style = `background-color: ${lineColors["BUS_DEFAULT"]}; color: white;`;
+        const cat = dep.category;
+        const num = dep.number;
+        const operator = (dep.operator || "").toLowerCase();
 
-
-        if (['S', 'R', 'IR', 'ICE', 'IC', 'RE', 'SN'].includes(category)) {
-
+        // 1. TRAINS
+        if (['S', 'R', 'IR', 'ICE', 'IC', 'RE', 'SN'].includes(cat)) {
             icon = ICONS.TRAIN;
-
             style = `background-color: ${lineColors["TRAIN"]}; color: white;`;
-
-        } else if (category === 'Post' || category === 'P') {
-
+        } 
+        // 2. POSTAUTO (Checking category OR operator name)
+        else if (cat === 'Post' || cat === 'P' || operator.includes('postauto') || operator.includes('pag')) {
             icon = ICONS.BUS;
-
-            style = `background-color: ${lineColors["POSTAUTO"]}; color: black;`;
-
-        } else if (category === 'T') {
-
+            style = `background-color: ${lineColors["POSTAUTO"]}; color: black; font-weight: 900;`;
+        } 
+        // 3. TRAMS
+        else if (cat === 'T') {
             icon = ICONS.TRAM;
-
-            const color = lineColors[number] || lineColors["BUS_DEFAULT"];
-
-            const textColor = ["13", "7"].includes(number) ? "#000" : "#fff";
-
+            const color = lineColors[num] || lineColors["BUS_DEFAULT"];
+            const textColor = ["13", "7"].includes(num) ? "#000" : "#fff";
             style = `background-color: ${color}; color: ${textColor};`;
-
         }
-
+        
         return { icon, style };
-
     }
-
 
     let activeInterval;
 
-
     async function searchAddress() {
-
         const query = document.getElementById('addressInput').value;
-
         const container = document.getElementById('resultsContainer');
-
-        container.innerHTML = '<div class="no-data">Searching...</div>';
-
+        container.innerHTML = '<div class="no-data">Locating...</div>';
         clearInterval(activeInterval);
 
-
         try {
-
             const geoRes = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&countrycodes=ch&limit=1`);
-
             const geoData = await geoRes.json();
-
             if (geoData.length === 0) return container.innerHTML = '<div class="no-data">Location not found.</div>';
-
             const { lat, lon } = geoData[0];
-
             updateData(lat, lon);
-
             activeInterval = setInterval(() => updateData(lat, lon), 30000);
-
         } catch (e) { container.innerHTML = '<div class="no-data">Connection error.</div>'; }
-
     }
 
-
     async function updateData(lat, lon) {
-
         const container = document.getElementById('resultsContainer');
-
         const now = new Date();
-
         try {
-
             const transportRes = await fetch(`https://transport.opendata.ch/v1/locations?x=${lat}&y=${lon}&type=station`);
-
             const transportData = await transportRes.json();
-
             
-
             const nearby = transportData.stations.filter(s => 
-
-                s.distance <= 300 && 
-
-                !s.name.toLowerCase().includes("triemlispital")
-
+                s.distance <= 350 && !s.name.toLowerCase().includes("triemlispital")
             );
 
-
             let allDepartures = [];
-
-
             for (const station of nearby) {
-
                 const boardRes = await fetch(`https://transport.opendata.ch/v1/stationboard?id=${station.id}&limit=15`);
-
                 const boardData = await boardRes.json();
-
                 
-
                 boardData.stationboard.forEach(dep => {
-
                     const diff = Math.round((new Date(dep.stop.departure) - now) / 60000);
-
-                    if (diff >= 0 && diff <= 15) {
-
+                    if (diff >= 0 && diff <= 20) {
                         allDepartures.push({ ...dep, waitTime: diff });
-
                     }
-
                 });
-
             }
-
 
             allDepartures.sort((a, b) => a.waitTime - b.waitTime);
 
-
             if (allDepartures.length > 0) {
-
                 container.innerHTML = allDepartures.map(dep => {
-
-                    const transport = getTransportData(dep.category, dep.number);
-
-                    const iconColor = transport.style.includes('black') ? '#FFCC00' : 'inherit';
-
+                    const transport = getTransportData(dep);
+                    // Force yellow icon for postauto
+                    const isPost = transport.style.includes(lineColors["POSTAUTO"]);
+                    const iconColor = isPost ? '#FFCC00' : 'inherit';
                     
-
                     return `
-
                         <div class="row">
-
                             <div class="line-identity">
-
                                 <span class="v-icon" style="color: ${iconColor}">${transport.icon}</span>
-
                                 <span class="line-box" style="${transport.style}">${dep.number}</span>
-
                             </div>
-
                             <span class="dest">${dep.to}</span>
-
                             <span class="time ${dep.waitTime < 4 ? 'hurry' : ''}">${dep.waitTime === 0 ? 'NOW' : dep.waitTime + "'"}</span>
-
                         </div>
-
                     `;
-
                 }).join('');
-
             } else {
-
-                container.innerHTML = '<div class="no-data">No departures in 15m.</div>';
-
+                container.innerHTML = '<div class="no-data">No departures soon.</div>';
             }
-
-            
-
-            document.getElementById('lastUpdated').innerText = `Last Update: ${now.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit', second:'2-digit'})}`;
-
+            document.getElementById('lastUpdated').innerText = `Last Update: ${now.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}`;
         } catch (e) { console.error(e); }
-
     }
-
     searchAddress();
-
 </script>
-
 </body>
-
-</html> 
+</html>
